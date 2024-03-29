@@ -7,10 +7,6 @@ def initialize_mongodb(
     server_path,
     database,
     collection1,
-    collection2,
-    collection3,
-    collection4,
-    collection5,
 ):
     """
     Initializes a connection to a MongoDB server and returns specified collections.
@@ -39,13 +35,9 @@ def initialize_mongodb(
 
     # Access or create the collections
     collection1 = db[collection1]
-    collection2 = db[collection2]
-    collection3 = db[collection3]
-    collection4 = db[collection4]
-    collection5 = db[collection5]
-    
+
     # Return the collections
-    return collection1, collection2, collection3, collection4, collection5
+    return collection1
 
 
 # Define an asynchronous lock

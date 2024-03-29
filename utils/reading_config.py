@@ -4,59 +4,53 @@ from datetime import datetime, timezone
 import ast
 
 
-def reading_query_config(config_path):
-    """
-    Reads configuration values from a Telegram config file.
-
-    Parameters:
-    - path(str) to Config file
-
-    Returns:
-    tuple: A tuple containing the following configuration values:
-        - keywords (list).
-        - author (str).
-        - subreddit (str).
-        - start_date (datetime object).
-        - end_date (datetime object)
-    """
-    # Reading Configs
+def reading_video_config(config_path):
+    # Load the configuration file
     config = configparser.ConfigParser()
     config.read(config_path)
-    keywords = config["Query"]["keywords"]
-    author = config["Query"]["author"]
-    subreddit = config["Query"]["subreddit"]
-    start_date = config["Query"]["start_date"]
-    end_date = config["Query"]["end_date"]
-    file_path_sub = config["Query"]["file_path_sub"]
-    file_path_com = config["Query"]["file_path_com"]
-    # Make them all None if None
-    if keywords == "None":
-        keywords = None
-    else: 
-        keywords = ast.literal_eval(keywords)
-        
-    if author == "None":
-        author = None
-    
-    if subreddit == "None":
-        subreddit = None
-    
-    if keywords == "None":
-        keywords = None
-    
-    if start_date == "None":
-        start_date = None
-    else:
-        start_date_naive = datetime.strptime(start_date, "%Y, %m, %d, %H, %M, %S")
-        start_date = start_date_naive.replace(tzinfo=timezone.utc)
-    
-    if end_date == "None": 
-        end_date = None
-    else:
-        end_date_naive = datetime.strptime(end_date, "%Y, %m, %d, %H, %M, %S")
-        end_date = end_date_naive.replace(tzinfo=timezone.utc)
 
-    return keywords, author, subreddit, start_date, end_date, file_path_sub, file_path_com
+    # Initialize dictionaries to store query clauses for each logical operator
+    query_and_clauses = []
+    query_or_clauses = []
+    query_not_clauses = []
+
+    # Iterate over options in the configuration file
+    for section in config.sections():
+        if section.startswith("date"):
+            start_date = config["date"]["start_date"]
+            end_date = config["date"]["end_date"]
+            print(start_date, end_date)
+        else:
+            logical_operator = section.split('_')[0].lower()
+            operation_value = config.get(section, 'operation')
+            field_name_value = config.get(section, 'field_name')
+            field_values_value = config.get(section, 'field_values').split(',')
+            
+            # Construct query clause dictionary
+            query_clause = {
+                "operation": operation_value,
+                "field_name": field_name_value,
+                "field_values": field_values_value
+            }
+            
+            # Append query clause to the appropriate list based on logical operator
+            if logical_operator == 'and':
+                query_and_clauses.append(query_clause)
+            elif logical_operator == 'or':
+                query_or_clauses.append(query_clause)
+            elif logical_operator == 'not':
+                query_not_clauses.append(query_clause)
+
+    # Construct the final query dictionary
+    query = {}
+    if query_and_clauses:
+        query["and"] = query_and_clauses
+    if query_or_clauses:
+        query["or"] = query_or_clauses
+    if query_not_clauses:
+        query["not"] = query_not_clauses
+
+    return query, start_date, end_date
 
 def reading_config_database(config_file):
     """
@@ -82,19 +76,12 @@ def reading_config_database(config_file):
     database = config["Database"]["database"]
 
     collection1 = config["Database"]["collection1"]
-    collection2 = config["Database"]["collection2"]
-    collection3 = config["Database"]["collection3"]
-    collection4 = config["Database"]["collection4"]
-    collection5 = config["Database"]["collection5"]
+
     
     return (
         server_path,
         database,
-        collection1,
-        collection2,
-        collection3,
-        collection4,
-        collection5,
+        collection1
     )
 
 
