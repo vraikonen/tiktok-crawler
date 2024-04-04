@@ -19,26 +19,25 @@ def reading_video_config(config_path):
         if section.startswith("date"):
             start_date = config["date"]["start_date"]
             end_date = config["date"]["end_date"]
-            print(start_date, end_date)
         else:
-            logical_operator = section.split('_')[0].lower()
-            operation_value = config.get(section, 'operation')
-            field_name_value = config.get(section, 'field_name')
-            field_values_value = config.get(section, 'field_values').split(',')
-            
+            logical_operator = section.split("_")[0].lower()
+            operation_value = config.get(section, "operation")
+            field_name_value = config.get(section, "field_name")
+            field_values_value = config.get(section, "field_values").split(",")
+
             # Construct query clause dictionary
             query_clause = {
                 "operation": operation_value,
                 "field_name": field_name_value,
-                "field_values": field_values_value
+                "field_values": field_values_value,
             }
-            
+
             # Append query clause to the appropriate list based on logical operator
-            if logical_operator == 'and':
+            if logical_operator == "and":
                 query_and_clauses.append(query_clause)
-            elif logical_operator == 'or':
+            elif logical_operator == "or":
                 query_or_clauses.append(query_clause)
-            elif logical_operator == 'not':
+            elif logical_operator == "not":
                 query_not_clauses.append(query_clause)
 
     # Construct the final query dictionary
@@ -51,6 +50,7 @@ def reading_video_config(config_path):
         query["not"] = query_not_clauses
 
     return query, start_date, end_date
+
 
 def reading_config_database(config_file):
     """
@@ -77,12 +77,7 @@ def reading_config_database(config_file):
 
     collection1 = config["Database"]["collection1"]
 
-    
-    return (
-        server_path,
-        database,
-        collection1
-    )
+    return (server_path, database, collection1)
 
 
 def reading_config_credentials(config_file):
@@ -104,15 +99,14 @@ def reading_config_credentials(config_file):
     # Reading Configs
     config = configparser.ConfigParser()
     config.read(config_file)
-    
+
     # Read config
     client_id = config["Tiktok"]["CLIENT_ID"]
     client_secret = config["Tiktok"]["CLIENT_SECRET"]
     client_key = config["Tiktok"]["CLIENT_KEY"]
     grant_type = config["Tiktok"]["GRANT_TYPE"]
-    
-    # submission_attributes = config["Reddit"]["submission_attributes"]    
-    # submission_attributes = ast.literal_eval(submission_attributes)
 
+    # submission_attributes = config["Reddit"]["submission_attributes"]
+    # submission_attributes = ast.literal_eval(submission_attributes)
 
     return client_id, client_secret, client_key, grant_type

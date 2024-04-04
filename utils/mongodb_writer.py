@@ -3,6 +3,7 @@ import re
 import logging
 import pymongo
 
+
 def initialize_mongodb(
     server_path,
     database,
@@ -29,7 +30,7 @@ def initialize_mongodb(
     """
     # Initialize the MongoDB client
     myclient = pymongo.MongoClient(server_path)
-    
+
     # Access or create the database
     db = myclient[database]
 
@@ -61,7 +62,7 @@ def write_data(data, collection_name):
     None
     """
     try:
-        #async with lock:
+        # async with lock:
         # Insert the data into the collection
         # Data should be a dictionary or a list of dictionaries
         if isinstance(data, dict):
