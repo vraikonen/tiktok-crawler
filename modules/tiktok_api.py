@@ -52,7 +52,7 @@ def get_access_token():
 
 def get_videos(access_token, video_col):
 
-    logging.info(f"{50 * '='} Retrieving comments: {50 * '='}")
+    logging.info(f"{50 * '='} Retrieving videos: {50 * '='}")
 
     # Get values from config
     video_config_path = "config/query-video.ini"
