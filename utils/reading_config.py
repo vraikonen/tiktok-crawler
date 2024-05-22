@@ -76,8 +76,10 @@ def reading_config_database(config_file):
     database = config["Database"]["database"]
 
     collection1 = config["Database"]["collection1"]
+    collection2 = config["Database"]["collection2"]
+    collection3 = config["Database"]["collection3"]
 
-    return (server_path, database, collection1)
+    return (server_path, database, collection1, collection2, collection3)
 
 
 def reading_config_credentials(config_file):
