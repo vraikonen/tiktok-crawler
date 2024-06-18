@@ -67,7 +67,7 @@ def get_videos(access_token, video_col):
     }
 
     # Create the folder for the files important for the script restart
-    temp_path = f"temp_{video_col.name}"
+    temp_path = f"temp_{video_col.database.name}"
     os.makedirs(temp_path, exist_ok=True)
     # Check if we run the script before
     if os.path.exists(f"{temp_path}/cursor.pickle") and os.path.exists(
@@ -181,47 +181,63 @@ def get_videos(access_token, video_col):
     #     )
 
 
+def get_video_ids(videos_df, video_id_column, comments_col, invalid_videos_col):
+    logging.info(f"{50 * '='} Retrieving comments: {50 * '='}")
 
-def get_video_ids(comments_col, videos_col, invalid_videos_col):
-    logging.info(50 * "==", " Retrieving comments: ", 50 * "==")
-
-
-    # Get IDs of previously queried videos, filter out videos without comments
-    cols = [videos_col, invalid_videos_col]
     video_ids = []
-    for col in cols:
-        cursor = col.find({"comment_count": {"$ne": 0}}, {"_id": 0, "id": 1})
-        cursor_list = list(cursor)
-        ids = [item["id"] for item in cursor_list]
-        video_ids.extend(ids)
-        if col == videos_col:
-            vids_with_comments = len(ids)
-        else:
-            invalid_videos = len(ids)
-    num_unique = len(set(video_ids))
-    processed_ids = []
+
+    # cursor = videos_col.find({"comment_count": {"$ne": 0}}, {"_id": 0, "id": 1})
+    # cursor_list = list(cursor)
+    # ids = [item["id"] for item in cursor_list]
+    # video_ids.extend(ids)
+
+    if "comment_count" in videos_df.columns:
+        try:
+            videos_df["comment_count"] = videos_df["comment_count"].astype(int)
+        except Exception as e:
+            logging.info(
+                f"Check your comment_count column - probably you have some alphabetic characters. This is the error: {str(e)}"
+            )
+        videos_df = videos_df[videos_df["comment_count"] != 0]
     try:
-        cursor = comments_col.find({}, {"_id": 0, "video_id": 1})
-        cursor_list = list(cursor)
-        processed_ids = [item["video_id"] for item in cursor_list]
-        print(len(processed_ids))
+        videos_df[video_id_column] = videos_df[video_id_column].astype(int)
+    except Exception as e:
+        logging.info(
+            f"Check your 'video_id' column - probably you have some alphabetic characters. Error: {str(e)}"
+        )
+    ids = videos_df[video_id_column].to_list()
+    video_ids.extend(ids)
+
+    processed_ids = []
+    cols = [invalid_videos_col, comments_col]
+    try:
+        for col in cols:
+            if col == invalid_videos_col:
+                cursor = col.find({}, {"_id": 0, "id": 1})
+                cursor_list = list(cursor)
+                ids = [item["id"] for item in cursor_list]
+            else:
+                cursor = col.find({}, {"_id": 0, "video_id": 1})
+                cursor_list = list(cursor)
+                ids = [item["video_id"] for item in cursor_list]
+            processed_ids.extend(ids)
     except Exception as e:
         logging.info(f"Error for accessing video IDs from collection: {e}")
-    # For make it unique
-    video_ids.extend(processed_ids)
+
+    # Filter processed videos
     video_ids = list(set(video_ids))
+    processed_ids = list(set(processed_ids))
+    filtered_list = [item for item in video_ids if item not in processed_ids]
     logging.info(
-        f"\nTotal, initial videos: {videos_col.count_documents({})}\n"
-        f"Of which have at least one comment: {vids_with_comments}\n"
-        f"Of which unique video IDs: {num_unique}\n"
-        f"Number of videos processed in the previous runs: {len(set(processed_ids)) + invalid_videos}\n"
-        f"Of which had invalid ID: {invalid_videos}\n"
-        f"Videos left to be processed: {len(video_ids)-len(processed_ids)}"
+        f"Total, initial videos that will eventually be fetched: {len(video_ids)}"
     )
-    return video_ids
+    logging.info(
+        f"Number of videos processed in previous iterations: {len(processed_ids)}"
+    )
+    return filtered_list
 
 
-# TODO Maybe check if some comments are not retrieved due to error 504 etc 
+# TODO Maybe check if some comments are not retrieved due to error 504 etc
 def get_comments(access_token, video_ids, comments_col, invalid_videos_col):
 
     endpoint = "https://open.tiktokapis.com/v2/research/video/comment/list/"
@@ -242,7 +258,7 @@ def get_comments(access_token, video_ids, comments_col, invalid_videos_col):
     consecutive_bad_requests = 0
     max_count = 100
     break_ = False
-    
+
     # Iterate over videos
     for video_id in video_ids:
         # TODO add here to query the same video_id for a few times if we couldnt send request or the request is bad?
@@ -269,13 +285,16 @@ def get_comments(access_token, video_ids, comments_col, invalid_videos_col):
                     # Get data and write it
                     data = response.json().get("data", {})
                     comments = data.get("comments", [])
-                    # Iterate through each comment and access the 'id' field
-                    comments_list = []
-                    for comment in comments:
-                        comment_id = comment.get("id")
-                        comments_list.append(comment_id)
-                    # for comment in comment:
-                    write_data(comments, comments_col)
+                    if len(comments) > 0:
+                        write_data(comments, comments_col)
+                    else:
+                        write_data(
+                            {
+                                "id": video_id,
+                                "status": "No comments found in this video.",
+                            },
+                            invalid_videos_col,
+                        )
                     num_comments += len(comments)
                     responses += 1
                     if responses % 100 == 0:
@@ -327,14 +346,16 @@ def get_comments(access_token, video_ids, comments_col, invalid_videos_col):
                     break
                 else:
                     # Sleep a bit if the status_code is 501, 500 or something random and try again
+                    # We do not save random response because we will eventually retrieve all the comments
+                    # As these are server errors and script will be terminate after 20 server errors
                     random_response += 1
-                    time.sleep(60)
+                    time.sleep(10 * random_response)
                     logging.info(
-                        f"Response not 200, but: {response.status_code}, with an info: {response.text}. Sleeping for one minute, and retrying {20-random_response} more times."
+                        f"Response not 200, but: {response.status_code}, with an info: {response.text}. Sleeping for 10 seconds*number of 5xx responses. Number of consecutive 5xx responses: {random_response} ."
                     )
                     if random_response == 20:
                         logging.info(
-                            f"Terminating the script after 20 attempts without valid response"
+                            f"Terminating the script after 20 attempts without valid response - most likely server errors."
                         )
                         print(
                             "Script is terminated. Check the log file and find out why."

@@ -11,7 +11,7 @@
 <h3 align="center">TikTok crawler</h3>
 
   <p align="center">
-    This python script fetches Tiktok posts (videos) based on a user defined query.
+    This python script fetches Tiktok posts (videos) based on a user defined query. It also fetches comments from selected videos provided in a csv file with their ids. As fetching comments is slower than videos, user defines set of videos they want to retrieve comments from.
     <br />
     <a href="https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler"><strong>Explore the docs »</strong></a>
     <br />
@@ -29,11 +29,11 @@
 
 ### Prerequisites
 
-- python == 3.11.7
-- pymongo == 4.6.3
-- requests == 2.31.0
+- python
+- pymongo
+- requests
 
->**__Note:__** This set-up is not so complex, so you can just install latest stable realease of python and packages.
+>**__Note:__** Install latest stable realease of python and packages.
 
 ### Step 1: Set-up repo
 
@@ -41,7 +41,7 @@
 
 2. Create a Python environment.
 
-3. Install `requirements.txt` and (potentially) remove package version number.
+3. Install `requirements.txt`.
 ```
 pip install -r requirements.txt
 ```
@@ -94,7 +94,7 @@ Since the Windows .msi distribution needs be installed on the system drive, here
 
 7. To finish setting up MongoDB, follow the steps 5 and 6 outlined in the earlier section "Database Configuration (Windows .msi)". 
 
-## Step 4: Define your query
+## Step 4.1: Define your query - videos
 
 1. Get a bit familiar with Tiktok query options [here](https://developers.tiktok.com/doc/research-api-specs-query-videos/) under *Body* section, key *query*. 
 
@@ -111,11 +111,38 @@ Since the Windows .msi distribution needs be installed on the system drive, here
 >**__Note1:__** Please refer to the example query and offical docs to understand it a bit more.
 >**__Note2:__** Please also check some videos endpoint reposonse in `raw_server_response/videos.json` to understand field_names better.
 
-## Step 5: Run the script
+## Step 4.2: Fill in comments config
+You will need to run the script multiple times, depending on the number of comments and videos, as rate limits reset every day at 12 AM UTC.
 
-This script should be run as a scheduled process (for example in Task scheduler in Windows if you use Windows). Therefore, run it at the same time everyday. Reason for this is that we hit rate limits after 20 minutes, and reseting of the rate limits happens every day at 12 AM UTC.
 
-Therefore, just define path to your python interpreter and run `main.py`.
+This step is only for fetching comments.
+
+Create a csv file with videos you want to get comments from. It needs to have at least a column with ids of the videos. Fill the `config/fetch-comments.ini`with path to the csv file and name of the column referring to ids of the videos. Potentially, either do not keep videos without comments, or keep column `comments_count`, and script will exclude videos without comments to save on requests.
+
+
+>**__Note:__** Check about the comments API rate limits in the section Rate limits later in the document. 
+## Step 5.1: Run the script - videos
+You will need to run the script multiple times, depending on the number of videos that match your query, as rate limits reset every day at 12 AM UTC.
+
+1. Run the script
+```
+python main.py
+```
+
+2. When prompted, choose videos.
+
+
+>**__Note:__** Each time you want to run a new query, change name of the database in `config/database.ini`. This is important because pagination information is saved in a temporary file named after the name of the database, and you want new pagination details for a new query.
+
+
+## Step 5.2: Run the script - comments
+
+1. Run the script
+```
+python main.py
+```
+
+2. When prompted, choose comments.
 
 ## Tiktok Research API Overview
 
@@ -137,13 +164,16 @@ Furthermore, there are 5 more endpoints:
 > **_NOTE:_** We can fetch/filter the data based on many query parameters, such as ["create_date", "username", "region_code", "video_id", "hashtag_name", "keyword", "music_id", "effect_id", "video_length"] for videos, but for users we can do it only based on "user_id". 
 
 **Rate limits**
-- Max 100,000 posts and max 100,000 comments per day = 1000 requests with max 100 posts retrieved per request // important: on average 60-70 valid posts out of 100 are retrieved with every request because some posts, although fit our filter, are private or shared by a user that is not 18 (again depends on a user demographics, maybe some topics/queries provide more posts per request)
+- Max 100,000 posts and max 100,000 comments per day = 1000 requests with max 100 posts/comments retrieved per request.
+
+**_NOTE:_** On average 60-70 valid posts out of 100 are retrieved with every request because some posts, although fit our filter, are private or shared by a user that is not 18 (again depends on a user demographics, maybe some topics/queries provide more posts per request)
+**_NOTE2:_** For posts that have 1 comment, we are going to loose 1 request. For posts with 101 or 201 comments, we will lose 2 and 3 requests respectively. Ideally, we could retrieve up to 100,000 comments daily, but this is only achievable if we fetch comments from posts with comment counts that are exact multiples of 100.
 
 - 2 million followers/following per day .
 
 - there is no information on rate limits for liked, pinned, reposted and user endpoints. 
 
-- in half an hour we are gonna hit rate limits with fetching posts i.e. in 30 minutes we will try to access 100,000 posts, and retrieve 60-70,000 (more less)
+- in half an hour we are gonna hit rate limits with fetching posts (IF THERE ARE NO SERVER ERRORS) i.e. in 30 minutes we will try to access 100,000 posts, and retrieve 60-70,000 (more less)
 
 >**_NOTE:_**  We can ask them to increase our rate limits and they will probably do it if we have a valid reason. As stated, we can never get 100 posts per request, as some posts are private.
 
@@ -157,14 +187,14 @@ TikTok let us access historical data. We cannot be sure that this will be the ca
   - we cannot access tiktok posts for up to 48 hours after they were created,
   - some query parameters (at least likes and view count) are updated every 10 days. 
 
-This means that it is hard to get a posts from a tiktok in the same way you got it from twitter, and it also means that it is hard to use it in the disaster context as we need to **wait as long as 48 hours after the post is shared to retrieve it**, plus we might not be able to get it based on some query paramters because those will not be updated, even after the post is available for retrieval.
+This means that it is hard to get a posts from a tiktok in the same way you got it from Twitter, and it also means that it is hard to use it in the disaster context as we need to **wait as long as 48 hours after the post is shared to retrieve it**, plus we might not be able to get it based on some query paramters because those will not be updated, even after the post is available for retrieval.
 
 Now what I think: 
 
-  - The idea behind their API is for the API user to get the data based on a usecase as we can query based on almost every object's endpoint that exists in their API. Furthermore, I think getting only 100,000 posts and 100,000 comments a day (and 2,000,000 accounts for the user network) is not a huge number, thus I would suggest we create this as a usecase specific, so that we can query based on the needs. 
+  - The idea behind their API is for the API user to get the data based on a usecase as we can query based on almost every object's endpoint that exists in their API. 
   - The other option is to have a continous crawl of the posts which means that we could set crawler to every day retrieve 100,000 posts from, at least, two days ago. Daily, there are 34 million new tiktok videos, with who knows how many comments. 
 
-**Proposed project structure/interface** (currently only videos endpoint implemented in this way): 
+**Proposed project structure/interface** (currently only videos and commentts endpoint implemented in this way): 
 
 There are config files for each of the main endpoints (posts,users,followers, following, pinned, liked, reposted, comments,)
   - user defines query criteria and run the script, many query examples will be provided
@@ -172,12 +202,10 @@ There are config files for each of the main endpoints (posts,users,followers, fo
       - query: give me all posts from 1st jan to 7th jan, with one or more of these options ["create_date", "username", "region_code", "video_id", "hashtag_name", "keyword", "music_id", "effect_id", "video_length"]
   - if we want to query users, we can only search based on a **username**, so only username will be provided
   - the same goes for liked videos, reposted videos, pinned videos, followers and following
-  - similar for the comments, we provide **post id**
 
 ### Questions:
 
-- Are country codes made bsaed on where the user registered the account? Yes, not the country where to post is shared or anything similar
-- Explore how keywords work
+- Are country codes made bsaed on where the user registered the account? Yes
 - https://developers.tiktok.com/doc/research-api-codebook/
 
 <!-- Suggestions and Issues -->
@@ -194,28 +222,3 @@ If you want this script to fetch more endpoints, please refer to [this page](htt
 * []() Sebastian Schmidt
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-### Message to Basti and Nefta; comments fetching proposal
-Hallo Basti und Nefta, 
-
-I know it is friday evening, but knowing the 35-step authentication process of microsoft, I assume this message will not disturb you. Also, it is not urgent, so don't bother to answer if you are on a vacation. I just wanted to send it here in oreder to not forget. 
-
-The issue: 
-  It takes on average 7-10 seconds to fetch comments from a single post. This means it will take 5-7 days to fetch all the comments from posts retrived during 30 minutes crawling period, i.e. all the posts retrieved in one day. This is the reason why I did not want to fetch comments right after we retrieve one post, as this would reduce the number of posts we retrieve. 
-
-  This is why I suggest to separate posts and comments fetching processes. Now, I would propose two options: 
-      1. Fetch all the posts 30 minutes a day, and then the rest of the day fetch comments or; 
-      2. Do not automatically fetch comments, but when the user decides on it - which promts to two other issues: 
-        2.1. Should posts be read from MonogDB? This means we would fetch comments of every post we retrieve or;
-        2.2. Should user decide on posts important for them, and then save id of those posts as a list to, for examlpe, a pickle? 
-
-  To wrap this up: 
-  We have a trade-off, do we want all the comments, regardless of the time it takes to fetch them? Or, should we filter posts for which we want to fetch comments, thus speed up the process?
-
-
-  Finally, based on everything, I would suggest next thing: 
-
-    Provide two options: 
-      - One option to fetch all the comments from the database
-      - One option for a user to provide a list of post ids, and fetch commetns based on that list. 

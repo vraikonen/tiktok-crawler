@@ -1,15 +1,16 @@
 import sys
 import os
+import pandas as pd
 
-from utils.reading_config import reading_config_credentials, reading_config_database
+from utils.reading_config import (
+    reading_config_credentials,
+    reading_config_database,
+    reading_config_comments,
+)
 from utils.logging import logging_crawler, custom_exception_hook
 from utils.mongodb_writer import initialize_mongodb
 
 from modules.tiktok_api import get_access_token, get_videos, get_video_ids, get_comments
-
-# TODO check reponses from the log file, response 504 is tricky! do the same id once again? why does that happend, how to do that?
-# write every invalid video id, and then try later to run the script on them,
-# write response code as separate key, and whole response as separate key, maybe also add timestamp?
 
 if __name__ == "__main__":
 
@@ -40,7 +41,15 @@ if __name__ == "__main__":
 
     # Perform the appropriate action based on user input
     if choice == "comments":
-        video_ids = get_video_ids(comments_col, videos_col, invalid_videos_col)
+        # Read df with video_ids
+        path_to_comments = "config/fetch-comments.ini"
+        path_to_video_df, video_id_column = reading_config_comments(path_to_comments)
+        df = pd.read_csv(path_to_video_df)
+
+        # Get ids of the videos
+        video_ids = get_video_ids(df, video_id_column, comments_col, invalid_videos_col)
+
+        # Fetch comments
         get_comments(access_token, video_ids, comments_col, invalid_videos_col)
     elif choice == "videos":
         get_videos(access_token, videos_col)

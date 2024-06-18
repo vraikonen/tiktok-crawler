@@ -82,6 +82,17 @@ def reading_config_database(config_file):
     return (server_path, database, collection1, collection2, collection3)
 
 
+def reading_config_comments(config_file):
+    # Reading Configs
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    path_to_video_df = config["Comments"]["path_to_video_df"]
+    video_id_column = config["Comments"]["video_id_column"]
+
+    return path_to_video_df, video_id_column
+
+
 def reading_config_credentials(config_file):
     """
     Initializes Telegram client objects based on configuration files.
