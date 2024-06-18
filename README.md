@@ -4,7 +4,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler">
+  <a href="https://github.com/vraikonen/tiktok-crawler">
     <img src="img/icon.png" alt="Logo" width="80" height="80">
   </a>
 
@@ -13,14 +13,14 @@
   <p align="center">
     This python script fetches Tiktok posts (videos) based on a user defined query. It also fetches comments from selected videos provided in a csv file with their ids. As fetching comments is slower than videos, user defines set of videos they want to retrieve comments from.
     <br />
-    <a href="https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/vraikonen/tiktok-crawler"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler">View Demo</a>
+    <a href="https://github.com/vraikonen/tiktok-crawler">View Demo</a>
     ·
-    <a href="https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler/-/issues">Report Bug</a>
+    <a href="https://github.com/vraikonen/tiktok-crawler/issues">Report Bug</a>
     ·
-    <a href="https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler/-/issues">Request Feature</a>
+    <a href="https://github.com/vraikonen/tiktok-crawler/issues">Request Feature</a>
   </p>
 </div>
 
@@ -179,7 +179,7 @@ Furthermore, there are 5 more endpoints:
 
 **Crawling strategy**
 
-> **_NOTE:_** We have decided to make a crawler use case specific. If there are any other ideas, create an issue [here](https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler/-/issues).
+> **_NOTE:_** We have decided to make a crawler use case specific. If there are any other ideas, create an issue [here](https://github.com/vraikonen/tiktok-crawler/issues).
 
 Now, let's explain why we have choosen use case crawl strategy.
 
@@ -211,7 +211,7 @@ There are config files for each of the main endpoints (posts,users,followers, fo
 <!-- Suggestions and Issues -->
 ## Feature Requests and Bug Reports
 
-See the [open issues](https://git.sbg.ac.at/geo-social-analytics/geo-social-media/tiktok-crawler/-/issues) for a full list of proposed features and known issues.
+See the [open issues](https://github.com/vraikonen/tiktok-crawler/issues) for a full list of proposed features and known issues.
 
 If you want this script to fetch more endpoints, please refer to [this page](https://developers.tiktok.com/doc/research-api-codebook/) and explore capabilities of the API.
 
